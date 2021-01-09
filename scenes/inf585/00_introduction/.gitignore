@@ -1,3 +1,7 @@
 # Build directory
 /[Bb]uild/
 /[Bb]uilds/
+
+# Files
+*.exe
+*.ilk
