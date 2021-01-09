@@ -20,6 +20,7 @@ using namespace vcl;
 // Structure storing the variables used in the GUI interface
 struct gui_parameters {
 	bool display_frame = true; // Display a frame representing the coordinate system
+	bool is_wireframe = false;
 };
 
 
@@ -59,6 +60,9 @@ void initialize_data();
 void display_scene(float current_time);
 //    Display the GUI widgets
 void display_interface();
+// Deformation
+void evolve_shape(float time);
+
 
 
 // ****************************************** //
@@ -69,9 +73,15 @@ mesh_drawable global_frame;
 mesh_drawable cube;
 mesh_drawable ground;
 mesh_drawable cylinder;
+mesh_drawable sphere;
 curve_drawable curve;
 
 timer_basic timer;
+
+// Deformation
+mesh shape;
+buffer <vec3> initial_position;
+mesh_drawable shape_visual;
 
 
 // ****************************************** //
@@ -186,6 +196,11 @@ void initialize_data()
 	cylinder = mesh_drawable(mesh_primitive_cylinder(/*radius*/ 0.2f, /*first extremity*/ {0,-1,0}, /*second extremity*/{0,1,0}));
 	cylinder.shading.color = {0.8f,0.8f,1};
 
+	// Create the sphere
+	mesh const sphere_mesh = mesh_primitive_sphere(0.3f, {0,-1.2,0});
+	sphere = mesh_drawable(sphere_mesh);
+	sphere.shading.color = { 0,1,1 };
+
 	// Create a parametric curve
     // **************************************** //
 	buffer<vec3> curve_positions;   // the basic structure of a curve is a vector of vec3
@@ -205,6 +220,12 @@ void initialize_data()
     curve = curve_drawable(curve_positions);
 	curve.color = {0,1,0};
 
+	// Deformable mesh
+	size_t const N = 100;
+	shape = mesh_primitive_grid({ 0,0,0 }, { 1,0,0 }, { 1,1,0 }, { 0,1,0 }, N, N);
+	initial_position = shape.position;
+	shape_visual = mesh_drawable(shape);
+	shape_visual.shading.color = { 0.6f, 0.6f, 0.9f };
 }
 
 
@@ -219,6 +240,9 @@ void display_scene(float time)
 
 	if(user.gui.display_frame) // conditional display of the global frame (set via the GUI)
 		draw(global_frame, scene);
+
+	if (user.gui.is_wireframe) // conditional display of the global frame (set via the GUI)
+		draw_wireframe(sphere, scene, { 0,0,1 });
 
 	// Display cylinder
     // ********************************************* //
@@ -248,7 +272,50 @@ void display_scene(float time)
     curve.transform.rotate = rotation({0,1,0},time);
 	draw(curve, scene);
 	
+	// Display sphere
+	vec3 const axis_of_sphere_rotation = { 0,0,1 };
+	float const angle_of_sphere_rotation = time / 2.0f;
+	rotation const rotation_sphere = rotation(axis_of_sphere_rotation, angle_of_sphere_rotation);
+	sphere.transform.rotate = rotation_sphere;
+	sphere.transform.translate.z = std::sin(time * 0.5);
+	sphere.shading.color = vec3(1 + std::cos(time), 1 + std::sin(time), 2.0) / 2.0f;
+	draw(sphere, scene);
+
+	// Display plane to deform
+	draw(shape_visual, scene);
+	if (user.gui.is_wireframe)
+		draw_wireframe(shape_visual, scene, { 0,0,0 });
 	
+	evolve_shape(time);
+	shape_visual.update_position(shape.position);
+
+	// Recompute normals on the CPU (given the position and the connectivity currently in the mesh structure)
+	shape.compute_normal();
+	// Send updated normals on the GPU
+	shape_visual.update_normal(shape.normal);
+
+	// Texture
+	// Reset the color of the shape to white (only the texture image will be seen)
+	shape_visual.shading.color = { 1,1,1 };
+
+	// Load the image and associate the texture id to the structure
+	shape_visual.texture = opengl_texture_to_gpu(image_load_png("assets/squirrel.png"));
+}
+
+void evolve_shape(float time)
+{
+	size_t const N = initial_position.size();
+	for (size_t k = 0; k < N; ++k)
+	{
+		// Wave
+		vec3 const& p0 = initial_position[k];
+		vec3& p = shape.position[k];
+		//p.z = p0.z + 0.1f * std::cos(10 * p.x + 4 * time);
+
+		//Perlin
+		float const dz = 0.3f * noise_perlin({ p0.x + 0.2f * time, p0.y, 0 }, 2) + 0.015f * noise_perlin({ 4 * p0.x, 4 * p0.y, time }, 2);
+		p = p0 + vec3(0, 0, dz);
+	}
 }
 
 // Display the GUI
@@ -256,7 +323,7 @@ void display_interface()
 {
 	ImGui::Checkbox("Display frame", &user.gui.display_frame);
 	ImGui::SliderFloat("Time Scale", &timer.scale, 0.0f, 2.0f, "%.1f");
-
+	ImGui::Checkbox("Wireframe", &user.gui.is_wireframe);
 }
 
 // Function called every time the screen is resized

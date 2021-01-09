@@ -65,7 +65,8 @@ mesh_drawable sphere;        // Sphere used to represent the particle
 mesh_drawable ground;        // Visual representation of the ground
 mesh_drawable global_frame;  // Frame used to see the global coordinate system
 
-timer_event_periodic timer(0.5f);  // Timer with periodic event
+//timer_event_periodic timer(0.5f);  // Timer with periodic event
+timer_event_periodic timer(0.1f);  // Timer with periodic event
 
 
 
@@ -191,15 +192,34 @@ void display_scene(float current_time)
 	// Compute the position of each particle at the current time
 	//   Then display it as a sphere
 	size_t N = particles.size();
+
+	vec3 p = { 0,0,0 };
+	vec3 p1 = { 0,0,0 };
+
 	for (size_t k = 0; k < N; ++k)
 	{
 		vec3 const& p0 = particles[k].p0;             // initial position
 		vec3 const& v0 = particles[k].v0;             // initial velocity
-		float const t = current_time-particles[k].t0; // elapsed time since particle birth
-			
+		float const t = current_time - particles[k].t0; // elapsed time since particle birth
+		float const ti = -2 * (v0.z / g.z);
+		float const attenuation = 0.85f;
+
+		vec3 p;
+
 		// TO DO: Modify this computation to model the bouncing effect
 		// **************************************************************** //
-		vec3 p = 0.5f*g*t*t + v0*t + p0; // currently only models the first parabola
+		
+		if (t < ti)
+		{
+			p = 0.5f * g * (t) * (t) + v0 * (t) + p0; // currently only models the first parabola
+		}
+
+		else if (t > ti)
+		{
+			vec3 const pi = 0.5f * g * (ti) * (ti) + v0 * (ti) + p0;
+			p = 0.5f * g * (t - ti) * (t - ti) + attenuation * v0 * (t - ti) + pi; // second parabola
+		}
+
 		// ... to adapt
 		// **************************************************************** //
 
@@ -215,9 +235,6 @@ void display_scene(float current_time)
 			draw(particles[k].trajectory, scene);
 		}
 	}
-
-	
-
 
 	// Display the ground
 	draw(ground, scene);

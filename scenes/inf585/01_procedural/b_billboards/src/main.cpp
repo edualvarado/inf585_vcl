@@ -46,6 +46,7 @@ struct particle_bubble
 	vec3 color;
 	float radius;
 	//  Add parameters you need to store for the bubbles
+	float phase;
 };
 
 struct particle_billboard
@@ -228,11 +229,17 @@ void display_scene()
 
 	for(size_t k = 0; k < billboards.size(); ++k)
 	{
+		vec3 const p = compute_billboard_position(billboards[k], timer_billboard.t);
+		quad.transform.translate = p;
+		quad.transform.rotate = scene.camera.orientation(); // always points to camera
+
+		float const alpha = (timer_billboard.t - billboards[k].t0) / 3.0f; // increase alpha with time
+		quad.shading.alpha = (1 - alpha) * std::sqrt(alpha);
 		// Display the sprites here
 		//  Note : to make the sprite constantly facing the camera set
 		//       quad.transform.rotation = scene.camera.orientation();
 		// ...
-		/* temporary code to remove or adapt */ quad.transform.translate = {0.0, k*0.6, 0.0f};  
+		/* temporary code to remove or adapt */ //quad.transform.translate = {0.0, k*0.6, 0.0f};  
 		draw(quad, scene);
 	}
 	glDepthMask(true);
@@ -249,21 +256,29 @@ particle_bubble create_new_bubble(float t)
 	bubble.t0 = t;
 
 	float const theta = rand_interval(0.0f, 2*pi);
-    float const radius = rand_interval(0.0f, 0.7f);
-    bubble.p0     = radius*vec3(std::cos(theta), 0.25, std::sin(theta));
-	bubble.radius = rand_interval(0.03f,0.08f);
+    float const radius = rand_interval(0.0f, 0.7f); // radius of pot
+    bubble.p0     = radius*vec3(std::cos(theta), 0.25, std::sin(theta)); // vec3 initial position of each bubble
+	bubble.radius = rand_interval(0.03f,0.08f); // radius (size) of bubble
 	bubble.color  = {0.5f+rand_interval(0,0.2f),0.6f+rand_interval(0,0.2f),1.0f-rand_interval(0,0.2f)};
 	// To be completed ...
+	bubble.phase = rand_interval(0.0f, 2 * pi); // offset for each bubble, s.t. they don't turn the same amount.
 
 	return bubble;
 }
 vec3 compute_bubble_position(particle_bubble const& bubble, float t_current)
 {
 	float const t = t_current - bubble.t0;
+	
+	vec3 wind = { 0,0,0 };
+	float const p_rot_x = 0.15f * std::cos(t * 5 + bubble.phase);
+	float const p_rot_y = (10 - bubble.radius) / 7.0f * t; // smaller bubbles go up faster.
+	float const p_rot_z = 0.15f * std::sin(t * 5 + bubble.phase);
 
+	vec3 p = bubble.p0 + wind * t + vec3{ p_rot_x,p_rot_y,p_rot_z };
+	
 	// To be modified ...
-	return {std::sin(3*t), t, 0.0f};
-
+	//return {std::sin(3*t), t, 0.0f};
+	return p;
 	
 }
 
@@ -272,12 +287,25 @@ particle_billboard create_new_billboard(float t)
 	particle_billboard billboard;
 	billboard.t0 = t;
 	// To be completed ...
+
+	float const theta = rand_interval(0.0f, 2 * pi);
+	billboard.p0 = 0.5f * vec3(std::cos(theta), 0.0f, std::sin(theta)) + vec3(0, 0.25f, 0);
+
 	return billboard;
 }
 vec3 compute_billboard_position(particle_billboard const& billboard, float t_current)
 {
+	float const t = t_current - billboard.t0; // time since billboard was born
+
+	float const theta = std::atan2(billboard.p0.x, billboard.p0.z);
+	float const x = t / 2 * std::sin(theta);
+	float const z = t / 2 * std::cos(theta);
+	float const y = -5 * (t / 3) * (t / 3) + 2.5f * (t / 3); // change -gravity by some other less accelerated values for smoke
+
+	return billboard.p0 + vec3(x, y, z);
+
 	// To be modified
-	return {0,0,0};
+	//return {0,0,0};
 }
 
 // Generic function allowing to remove particles with a lifetime greater than t_max
