@@ -45,6 +45,13 @@ mesh_drawable body;         // The static body of the character
 
 buffer<float> weights;                // Blend Shapes weights
 
+// NEW
+buffer<vec3> single_face_vertex_difference;
+buffer<buffer<vec3>> vertex_difference;
+
+vec3 mesh_difference;
+buffer<vec3> mesh_difference_sum;
+buffer<vec3> deformed_vertex_q;
 
 int main(int, char* argv[])
 {
@@ -128,6 +135,10 @@ void initialize_data()
 
 	size_t N_face = faces_storage.size();
 	weights.resize(N_face);
+	
+	size_t N_vertex_per_face = faces_storage[0].position.size();
+	mesh_difference_sum.resize(N_vertex_per_face);
+	deformed_vertex_q.resize(N_vertex_per_face);
 
 	// To Do:
 	//  You can add here any precomputation you need to do. For instance, precomputing the difference between a pose and the reference one.
@@ -135,7 +146,20 @@ void initialize_data()
 	//    faces_storage[0].position[k] - refers to the k-th vertex position of the reference pose
 	//    faces_storage[k_face].position[k] - refers to the k-th vertex of the pose k_face (for k_face>0)
 
-}
+
+	for (int k_face = 1; k_face < N_face; k_face++)
+	{
+		for (int k = 0; k < faces_storage[k_face].position.size(); k++) // Length of the buffer is correct?
+		{
+			vec3 diff = faces_storage[k_face].position[k] - faces_storage[0].position[k];
+			single_face_vertex_difference.push_back(diff);
+
+		}
+		vertex_difference.push_back(single_face_vertex_difference);
+		single_face_vertex_difference.clear();
+	}
+}	
+
 
 void display_scene() 
 {
@@ -174,7 +198,31 @@ void update_blend_shape()
 	//    - the function normal_per_vertex(...) - can be used to automatically compute new normals
 	//    - If you use buffer, you can use operator + (or +=) between two buffers of same size to add their values. You can also multiply a buffer with a scalar value.
 
-	std::cout<<"Called update_blend_shape with weights values: "<<weights<<std::endl; // line to remove once you have seen its action
+	size_t N_face = faces_storage.size();
+	mesh_difference_sum.clear();
+	deformed_vertex_q.clear();
+
+	// Go thourgh each vertex of the reference face (which should be the same for the other faces)
+	for (int i = 0; i < faces_storage[0].position.size(); i++) 
+	{
+		mesh_difference = { 0, 0, 0 };
+
+		for (int k_face = 0; k_face < vertex_difference.size(); k_face++)
+		{
+			mesh_difference += weights[k_face] * vertex_difference[k_face][i];
+		}
+
+		mesh_difference_sum.push_back(mesh_difference);
+	}
+
+	for (int i = 0; i < faces_storage[0].position.size(); i++)
+	{
+		deformed_vertex_q.push_back(faces_storage[0].position[i] + mesh_difference_sum[i]);
+	}
+
+	face.update_position(deformed_vertex_q);
+	//face.update_normal(deformed_vertex_q);
+
 }
 
 
