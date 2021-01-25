@@ -22,6 +22,10 @@ bool display_interface(gui_widget& gui)
 	ImGui::RadioButton("Translate",ptr_deformer_type, deform_translate); ImGui::SameLine();
     ImGui::RadioButton("Twist",ptr_deformer_type, deform_twist); ImGui::SameLine();
     ImGui::RadioButton("Scale",ptr_deformer_type, deform_scale);
+#ifdef SOLUTION
+	ImGui::SameLine();
+	ImGui::RadioButton("Perlin Noise",ptr_deformer_type, deform_noise_perlin);
+#endif
 
 	ImGui::Text("Deformer direction:"); // Select the type of deformation to apply
 	int* ptr_deformer_direction = (int*)&gui.deformer_direction;
