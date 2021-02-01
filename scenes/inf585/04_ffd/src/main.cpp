@@ -18,6 +18,7 @@
 #include "interface.hpp"
 #include "ffd.hpp"
 #include "grid_helper.hpp"
+#define SOLUTION
 
 using namespace vcl;
 
@@ -57,6 +58,9 @@ mesh shape;                    // Mesh structure of the deformed shape
 mesh_drawable visual;          // Visual representation of the deformed shape
 
 grid_3D<vec3> grid;              // Data of the (x,y,z) grid
+#ifdef SOLUTION
+buffer<grid_3D<float> > weights; // weights precomputation
+#endif
 
 
 mesh_drawable sphere;       // visual element of the grid
@@ -110,7 +114,11 @@ int main(int, char* argv[])
 		timer_update_shape.update();
 		if(timer_update_shape.event && require_shape_update) // scheduling system to avoid too many times the FFD deformation
 		{
+#ifdef SOLUTION
+			ffd_deform(shape.position, grid, weights);
+#else
 			ffd_deform(shape.position, grid); // Call of the deformation - you may need to add extra parameters to this function
+#endif
 
 			// Update of the visual modifications
 			visual.update_position(shape.position);
@@ -222,6 +230,14 @@ void create_new_surface() // call this function every time we change of surface
 	if(user.widget.reset_grid)
 		grid = initialize_grid(int(grid.dimension.x), int(grid.dimension.y), int(grid.dimension.z));
 
+#ifdef SOLUTION
+	// Recompute weights
+	int const Nx = int(grid.dimension.x);
+	int const Ny = int(grid.dimension.y); 
+	int const Nz = int(grid.dimension.z);
+	weights.clear();
+	weights = precompute_weights(shape.position, Nx, Ny, Nz);
+#endif
 	require_shape_update = true;
 }
 

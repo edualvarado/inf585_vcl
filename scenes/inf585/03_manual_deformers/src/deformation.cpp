@@ -1,5 +1,5 @@
 #include "deformation.hpp"
-
+#define SOLUTION
 
 
 using namespace vcl;
@@ -62,12 +62,13 @@ void apply_deformation(mesh& shape, // The position of shape are the one to be d
 				p_shape = p_clicked + (1+tr.x*w)*(p_shape_original-p_clicked);
 			}
 
+			/*
 			if (widget.deformer_type == deform_noise_perlin) {
 				vec3 const translation = camera_orientation*vec3(tr,0.0f);
 				vec3 const translation_normal = norm(translation) * dot(normalize(translation), n_clicked) * n_clicked;
 				float const noise = noise_perlin( 1.5f *p_shape_original);
 				p_shape = p_shape_original + w*noise*translation_normal;
-			}
+			}*/
 
 		}
 #else

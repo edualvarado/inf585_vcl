@@ -54,7 +54,7 @@ namespace vcl
 			//    T0 and T1 are affine_rt type that contains a translation (vec3) and a rotation element
 			//    alpha is the interpolation value \in [0,1]
 			//    You have to find which values to set on T.translate and T.rotation
-			
+
 			skeleton_current[kj] = T0; // Change this line
 		}
 

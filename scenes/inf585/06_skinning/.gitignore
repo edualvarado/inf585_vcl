@@ -1,0 +1,13 @@
+# Build directory
+/[Bb]uild/
+/[Bb]uilds/
+
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+*.ilk

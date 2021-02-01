@@ -2,6 +2,7 @@
 
 #include "interface.hpp"
 #include "vcl/vcl.hpp"
+#define SOLUTION
 
 
 
@@ -15,5 +16,10 @@ struct picking_parameters {
 };
 
 // Compute the FFD deformation
+#ifdef SOLUTION
+void ffd_deform(vcl::buffer<vcl::vec3>& position, vcl::grid_3D<vcl::vec3> const& grid, vcl::buffer<vcl::grid_3D<float> > const& weights);
+vcl::buffer<vcl::grid_3D<float>> precompute_weights(vcl::buffer<vcl::vec3>& position, int Nx, int Ny, int Nz);
+#else
 void ffd_deform(vcl::buffer<vcl::vec3>& position, vcl::grid_3D<vcl::vec3> const& grid /** You may want to add other parameters*/);
+#endif 
 
