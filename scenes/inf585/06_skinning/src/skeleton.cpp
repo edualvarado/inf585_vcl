@@ -1,4 +1,5 @@
 #include "skeleton.hpp"
+#define SOLUTION
 
 namespace vcl
 {
@@ -43,6 +44,16 @@ namespace vcl
 
 		for(size_t kj=0; kj<N_joint; ++kj)
 		{
+#ifdef SOLUTION
+			affine_rt const T0 = animation_geometry_local[kt][kj];
+			affine_rt const T1 = animation_geometry_local[kt+1][kj];
+
+			affine_rt T;
+			T.translate = (1-alpha)*T0.translate+alpha*T1.translate;
+			T.rotate = rotation::lerp(T0.rotate, T1.rotate, alpha);
+
+			skeleton_current[kj] = T;
+#else
 			
 			affine_rt const T0 = animation_geometry_local[kt][kj];
 			affine_rt const T1 = animation_geometry_local[kt+1][kj];
@@ -54,8 +65,9 @@ namespace vcl
 			//    T0 and T1 are affine_rt type that contains a translation (vec3) and a rotation element
 			//    alpha is the interpolation value \in [0,1]
 			//    You have to find which values to set on T.translate and T.rotation
-
+			
 			skeleton_current[kj] = T0; // Change this line
+#endif
 		}
 
 		return skeleton_current;

@@ -12,6 +12,7 @@
 #include "skinning.hpp"
 #include "skinning_loader.hpp"
 
+#define SOLUTION
 
 using namespace vcl;
 
@@ -29,6 +30,9 @@ struct gui_parameters {
 	bool skeleton_rest_pose_bone = false;
 	bool skeleton_rest_pose_frame = false;
 	bool skeleton_rest_pose_sphere = false;
+#ifdef SOLUTION
+	bool is_dqs = false;
+#endif
 };
 
 struct user_interaction_parameters {
@@ -179,11 +183,24 @@ void compute_deformation()
 	skinning_data.skeleton_current = skeleton_data.evaluate_global(t);
 	visual_data.skeleton_current.update(skinning_data.skeleton_current, skeleton_data.parent_index);
 
+#ifdef SOLUTION
+	if(user.gui.is_dqs)
+		skinning_DQS_compute(skinning_data.position_skinned, skinning_data.normal_skinned, 
+			skinning_data.skeleton_current, skinning_data.skeleton_rest_pose, 
+			skinning_data.position_rest_pose, skinning_data.normal_rest_pose,
+			rig);
+	else
+		skinning_LBS_compute(skinning_data.position_skinned, skinning_data.normal_skinned, 
+			skinning_data.skeleton_current, skinning_data.skeleton_rest_pose, 
+			skinning_data.position_rest_pose, skinning_data.normal_rest_pose,
+			rig);
+#else
 	// Compute skinning deformation
 	skinning_LBS_compute(skinning_data.position_skinned, skinning_data.normal_skinned, 
 		skinning_data.skeleton_current, skinning_data.skeleton_rest_pose, 
 		skinning_data.position_rest_pose, skinning_data.normal_rest_pose,
 		rig);
+#endif
 	visual_data.surface_skinned.update_position(skinning_data.position_skinned);
 	visual_data.surface_skinned.update_normal(skinning_data.normal_skinned);
 	
@@ -245,6 +262,9 @@ void display_interface()
 	ImGui::SliderFloat("Time Scale", &timer.scale, 0.05f, 2.0f, "%.2f s");
 
 	ImGui::Spacing(); ImGui::Spacing();
+#ifdef SOLUTION
+	ImGui::Checkbox("DQS", &user.gui.is_dqs);
+#endif
 
 	ImGui::Text("Deformed "); 
 	ImGui::Text("Surface: ");ImGui::SameLine();
