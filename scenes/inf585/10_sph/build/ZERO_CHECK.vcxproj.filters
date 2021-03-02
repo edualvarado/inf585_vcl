@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Eduardo\Documents\Github\edualvarado\07_ComputerGraphics\INF585\inf585_vcl\scenes\inf585\10_sph\build\CMakeFiles\eb05c0f20bdec0fb852b2b8b1620db1f\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{3313E68C-2744-3E1B-9928-027118AC0B27}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

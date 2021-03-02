@@ -2,6 +2,7 @@
 
 #include "vcl/vcl.hpp"
 #include "boundary.hpp"
+#define SOLUTION
 
 enum density_type_structure {density_color, density_texture, view_velocity_curl} ;
 
@@ -22,6 +23,28 @@ void diffuse(vcl::grid_2D<T>& new_field, vcl::grid_2D<T> const& field_reference,
     //  Use f as current value, f_prev as previous value
     //  The function is generic in order to handle f as being either a velocity (T=vec2), or a color density (T=vec3)
 
+#ifdef SOLUTION
+    size_t const Nx = new_field.dimension[0];
+    size_t const Ny = new_field.dimension[1];
+
+    float const a = mu*dt;
+
+    for(size_t k_iter=0; k_iter<10; ++k_iter)
+    {
+        for(size_t x=1; x<Nx-1; ++x){
+            for(size_t y=1; y<Ny-1; ++y){
+                new_field(x,y) = 1/(1+4*a) * (field_reference(x,y) + a*(new_field(x-1,y)+new_field(x+1,y)+new_field(x,y-1)+new_field(x,y+1)));
+            }
+        }
+
+		if(boundary==copy){
+			set_boundary(new_field);
+        }
+		else{
+			set_boundary_reflective(new_field);
+        }
+    }
+#else
     // TO do:
     //  Update new_field in solving the diffusion equation for the time step dt
     //  Use Gauss-Seidel iterations over 10 to 15 times
@@ -31,6 +54,7 @@ void diffuse(vcl::grid_2D<T>& new_field, vcl::grid_2D<T> const& field_reference,
 	//       	else
 	//		set_boundary_reflective(new_field);
 
+#endif
 
 
 }

@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "simulation.hpp"
+#define SOLUTION
 
 
 using namespace vcl;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vcl/vcl.hpp"
+#define SOLUTION
 
 
 

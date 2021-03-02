@@ -1,4 +1,5 @@
 #include "simulation.hpp"
+#define SOLUTION
 
 using namespace vcl;
 
@@ -10,16 +11,28 @@ float density_to_pressure(float rho, float rho0, float stiffness)
 
 float W_laplacian_viscosity(vec3 const& p_i, vec3 const& p_j, float h)
 {
+#ifdef SOLUTION
+	float const r = norm(p_i-p_j);
+	assert_vcl_no_msg(r<=h);
+	return 45/(3.14159f*std::pow(h,6.0f))*(h-r);
+#else
     // To do ...
     //  Fill it with laplacian of W_viscosity
     return 0.0f;
+#endif
 }
 
 vec3 W_gradient_pressure(vec3 const& p_i, vec3 const& p_j, float h)
 {
+#ifdef SOLUTION
+	float const r = norm(p_i-p_j);
+	assert_vcl_no_msg(r<=h);
+	return -45/(3.14159f*std::pow(h,6.0f))*std::pow(h-r,2)*(p_i-p_j)/r;
+#else
     // To do ...
     //  Fill it with gradient of W_spiky
     return (p_i-p_j)/norm(p_i-p_j);
+#endif
 }
 
 float W_density(vec3 const& p_i, const vec3& p_j, float h)
@@ -32,11 +45,31 @@ float W_density(vec3 const& p_i, const vec3& p_j, float h)
 
 void update_density(buffer<particle_element>& particles, float h, float m)
 {
+#ifdef SOLUTION
+    size_t const N = particles.size();
+
+    for(size_t i=0; i<N; ++i)
+        particles[i].rho = 0.0f;
+
+    for(size_t i=0; i<N; ++i)
+    {
+        for(size_t j=0; j<N; ++j)
+        {
+            vec3 const& pi=particles[i].p;
+            vec3 const& pj=particles[j].p;
+
+            float const r = norm(pi-pj);
+            if(r<h)
+                particles[i].rho += m * W_density(pi,pj,h);
+        }
+    }
+#else
     // To do: Compute the density value (particles[i].rho) at each particle position
     //  rho_i = \sum_j m W_density(pi,pj)
     size_t const N = particles.size();
     for(size_t i=0; i<N; ++i)
         particles[i].rho = 1.0f; // to be modified
+#endif
 
 
 }
@@ -57,12 +90,49 @@ void update_force(buffer<particle_element>& particles, float h, float m, float n
     for(size_t i=0; i<N; ++i)
         particles[i].f = m * vec3{0,-9.81f,0};
 
+#ifdef SOLUTION
+    for(size_t i=0; i<N; ++i)
+    {
+        for(size_t j=0; j<N; ++j)
+        {
+            if (i==j)
+                continue;
+
+            const vec3& pi = particles[i].p;
+            const vec3& pj = particles[j].p;
+            float r = norm(pi-pj);
+
+            if(r<h)
+            {
+                const vec3& vi = particles[i].v;
+                const vec3& vj = particles[j].v;
+
+                const float pressure_i = particles[i].pressure;
+                const float pressure_j = particles[j].pressure;
+
+                const float rho_i = particles[i].rho;
+                const float rho_j = particles[j].rho;
+
+				vec3 force_pressure = {0,0,0};
+				vec3 force_viscosity = {0,0,0};
+
+				force_pressure = - m/rho_i * (pressure_i+pressure_j)/(2*rho_j)*W_gradient_pressure(pi,pj,h);
+				force_viscosity = nu * m * m * (vj-vi)/rho_j * W_laplacian_viscosity(pi,pj,h);
+
+				
+                particles[i].f += force_pressure + force_viscosity;
+            }
+
+        }
+    }
+#else
     //TO Do
     // For all particles i
     //   Compute F_pressure
     //   Compute F_viscosity
     //   particles[i].f += (F_pressure + F_viscosity) / rho_i
     // ...
+#endif
 
 }
 
@@ -83,9 +153,8 @@ void simulate(float dt, buffer<particle_element>& particles, sph_parameters_stru
 		vec3& p = particles[k].p;
 		vec3& v = particles[k].v;
 		vec3& f = particles[k].f;
-        //float const rho = particles[k].rho;
 
-		v = (1-damping)*v + dt*f/m;//rho;
+		v = (1-damping)*v + dt*f/m;
 		p = p + dt*v;
 	}
 
